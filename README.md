@@ -1767,7 +1767,9 @@ fun asyncStringsList(): List<Deferred<String>> {
 }
 ```
 
-现在，主函数等待第一个函数完成并计算仍处于活动状态的延迟值的数量。注意，我们在这里使用的select表达式是Kotlin DSL，因此我们可以使用任意代码为它提供子句。在这种情况下，我们遍历一个延迟值列表，onAwait为每个延迟值提供子句。
+现在，主函数等待第一个函数完成并计算仍处于活动状态的延迟值的数量。
+注意，我们在这里使用的select表达式是Kotlin DSL，因此我们可以使用任意代码为它提供子句。
+在这种情况下，我们遍历一个延迟值列表，onAwait为每个延迟值提供子句。
 
 ```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
