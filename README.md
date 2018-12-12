@@ -1,11 +1,10 @@
 ![](https://img.hacpai.com/bing/20180921.jpg?imageView2/1/w/960/h/520/interlace/1/q/100) 
----
- 原文翻译  [https://github.com/Kotlin/kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines) 
- 
----
+
 ## Kotlin协程1.0.1版本 更新
 ## 更新时间 2018/12/12 22:50
+### 原文 [https://github.com/Kotlin/kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines) 
 
+### 参考代码片段 [https://github.com/AllenCoder/KotlinDemo](https://github.com/AllenCoder/KotlinDemo)
 
 
 ### 你的第一个协程
@@ -37,7 +36,7 @@ World!
 Error: Kotlin: Suspend functions are only allowed to be called from a coroutine or another suspend function
 ```
 
-这是因为delay是一个特殊的挂起函数，它不会阻塞一个线程，但会挂起 协同程序，它只能从协程中使用。
+这是因为delay是一个特殊的挂起函数，它不会阻塞一个线程，但会挂起 协程，它只能从协程中使用。
 
 ### 桥接阻塞和非阻塞世界
 
@@ -91,12 +90,12 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 ### 结构化并发
 
 1303/5000
-对于协同程序的实际使用仍有一些需要。当我们使用GlobalScope.launch时，我们创建了一个顶级协程。
+对于协程的实际使用仍有一些需要。当我们使用GlobalScope.launch时，我们创建了一个顶级协程。
 尽管它很轻，但它在运行时仍会消耗一些内存资源。如果我们忘记保留对新启动的协程的引用，它仍会运行。
-如果协同程序中的代码挂起（例如，我们错误地延迟了太长时间），如果我们启动了太多的协程并且内存不足会怎么样？
-必须手动保持对所有已启动的协同程序的引用并加入它们是容易出错的。有一个更好的解决方案。
+如果协程中的代码挂起（例如，我们错误地延迟了太长时间），如果我们启动了太多的协程并且内存不足会怎么样？
+必须手动保持对所有已启动的协程的引用并加入它们是容易出错的。有一个更好的解决方案。
 我们可以在代码中使用结构化并发。就像我们通常使用线程（线程总是全局的）一样，
-我们可以在我们正在执行的操作的特定范围内启动协同程序，而不是在GlobalScope中启动协同程序。
+我们可以在我们正在执行的操作的特定范围内启动协程，而不是在GlobalScope中启动协程。
 在我们的示例中，我们使用runBlocking coroutine builder将main函数转换为协程。每个协程构建器（包括runBlocking）
 都将CoroutineScope的实例添加到其代码块的范围内。我们可以在此范围内启动协程，
 而无需显式连接它们，因为在其范围内启动的所有协程完成之前，外部协程（在我们的示例中为runBlocking）不会完成。因此，我们可以使我们的示例更简单：
@@ -171,7 +170,7 @@ suspend fun doWorld() {
 可以使用CoroutineScope（coroutineContext），但是这种方法在结构上是不安全的，
 因为您不再能够控制此方法的执行范围。 只有私有API才能使用此构建器。
 
-### 协同程序足够轻量级
+### 协程足够轻量级
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -185,11 +184,11 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     jobs.forEach { it.join() } // wait for all jobs to complete
 }
 ```
-它启动了100K协同程序，一秒钟之后，每个协同程序都打印出一个点。
+它启动了100K协程，一秒钟之后，每个协程都打印出一个点。
 现在，尝试使用线程。会发生什么？（很可能你的代码会产生某种内存不足的错误）
 
-### 协同程序就像守护程序线程
-下面的代码启动一个长时间运行的协同程序，每秒打印“我正在睡觉”两次，然后在一段延迟后从main函数返回：
+### 协程就像守护程序线程
+下面的代码启动一个长时间运行的协程，每秒打印“我正在睡觉”两次，然后在一段延迟后从main函数返回：
 
 
 ```
@@ -211,12 +210,12 @@ I'm sleeping 1 ...
 I'm sleeping 2 ...
 ```
 
-活动协同程序不会使进程保持活动状态。它们就像守护程序线程。
+活动协程不会使进程保持活动状态。它们就像守护程序线程。
 
 
 ### 取消和超时
 
-在小应用程序中，从“main”方法返回可能听起来像是一个好主意，以便隐式终止所有协同程序。
+在小应用程序中，从“main”方法返回可能听起来像是一个好主意，以便隐式终止所有协程。
 在较大的长期运行的应用程序中，您需要更精细的控制。在推出函数返回一个作业，可用于取消运行协程：
 
 
@@ -245,7 +244,7 @@ main: I'm tired of waiting!
 main: Now I can quit.
 ```
 
-主调用后job.cancel，我们看不到其他协同程序的任何输出，因为它已被取消。
+主调用后job.cancel，我们看不到其他协程的任何输出，因为它已被取消。
 还有一个Job扩展函数cancelAndJoin ，它结合了取消和连接调用。
 
 ### 取消是协同的
@@ -313,7 +312,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 ```
 
 
-如您所见，现在此循环已取消。isActive是通过CoroutineScope对象在协同程序代码中可用的属性。
+如您所见，现在此循环已取消。isActive是通过CoroutineScope对象在协程代码中可用的属性。
 
 ### 最后关闭资源
 
@@ -350,7 +349,7 @@ main: Now I can quit.
 ```
 
 ### 运行不可取消的块
-finally在前一个示例的块中尝试使用挂起函数将导致CancellationException，因为运行此代码的协程将 被取消。通常，这不是问题，因为所有表现良好的关闭操作（关闭文件，取消作业或关闭任何类型的通信通道）通常都是非阻塞的，并且不涉及任何挂起功能。但是，在极少数情况下，当您需要挂起已取消的协同程序时，可以withContext(NonCancellable) {...}使用withContext函数和NonCancellable上下文包装相应的代码， 如下例所示：
+finally在前一个示例的块中尝试使用挂起函数将导致CancellationException，因为运行此代码的协程将 被取消。通常，这不是问题，因为所有表现良好的关闭操作（关闭文件，取消作业或关闭任何类型的通信通道）通常都是非阻塞的，并且不涉及任何挂起功能。但是，在极少数情况下，当您需要挂起已取消的协程时，可以withContext(NonCancellable) {...}使用withContext函数和NonCancellable上下文包装相应的代码， 如下例所示：
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -376,7 +375,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 ```
 
 超时退出
-在实践中取消协程执行的最明显的原因是因为它的执行时间超过了一些超时。虽然您可以手动跟踪对相应作业的引用并启动单独的协同程序以在延迟后取消跟踪的协程，
+在实践中取消协程执行的最明显的原因是因为它的执行时间超过了一些超时。虽然您可以手动跟踪对相应作业的引用并启动单独的协程以在延迟后取消跟踪的协程，
 但是有一个准备好使用withTimeout函数执行此操作。请看以下示例：
 
 ```
@@ -480,7 +479,7 @@ Completed in 2017 ms
 
 如果在调用doSomethingUsefulOne和之间没有依赖关系，doSomethingUsefulTwo并且我们希望通过同时执行两者来更快地得到答案，该怎么办？这是异步来帮助的地方。
 
-从概念上讲，异步就像启动一样。它启动一个单独的协程，这是一个轻量级的线程，与所有其他协同程序同时工作。不同之处在于launch返回一个Job并且不携带任何结果值，同时async返回Deferred - 一个轻量级的非阻塞未来，表示稍后提供结果的承诺。您可以使用.await()延迟值来获取其最终结果，但Deferred也是a Job，因此您可以根据需要取消它。
+从概念上讲，异步就像启动一样。它启动一个单独的协程，这是一个轻量级的线程，与所有其他协程同时工作。不同之处在于launch返回一个Job并且不携带任何结果值，同时async返回Deferred - 一个轻量级的非阻塞未来，表示稍后提供结果的承诺。您可以使用.await()延迟值来获取其最终结果，但Deferred也是a Job，因此您可以根据需要取消它。
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -500,13 +499,13 @@ The answer is 42
 Completed in 1017 ms
 ```
 
-这是两倍的速度，因为我们同时执行了两个协同程序。注意，与协同程序的并发性始终是显式的。
+这是两倍的速度，因为我们同时执行了两个协程。注意，与协程的并发性始终是显式的。
 
 
 ### 懒加载实现异步
 
 使用值为CoroutineStart.LAZY的可选参数进行异步时有一个惰性选项。
-它仅在某些等待需要其结果或调用启动函数时才启动协同程序 。运行以下示例，该示例仅与此前一个示例不同：start
+它仅在某些等待需要其结果或调用启动函数时才启动协程 。运行以下示例，该示例仅与此前一个示例不同：start
 
 ```
 import kotlinx.coroutines.*
@@ -543,8 +542,8 @@ suspend fun doSomethingUsefulTwo(): Int {
 The answer is 42
 Completed in 2017 ms
 ```
-所以，这里定义了两个协同程序，但是没有像前面的例子那样执行，但是程序员在完全通过调用start开始执行时会给出控制权。 
-我们首先启动一个，然后启动两个，然后等待各个协同程序完成。
+所以，这里定义了两个协程，但是没有像前面的例子那样执行，但是程序员在完全通过调用start开始执行时会给出控制权。 
+我们首先启动一个，然后启动两个，然后等待各个协程完成。
 
 注意，如果我们在println中调用了await并且在各个协程上省略了start，
 那么我们就会得到顺序行为，因为await启动协程执行并等待执行完成，这不是懒惰的预期用例。
@@ -571,7 +570,7 @@ fun  somethingUsefulTwoAsync() = GlobalScope.async {
 注意，这些xxxAsync功能不是 暂停功能。它们可以在任何地方使用。
 但是，它们的使用总是意味着它们的动作与调用代码的异步（这里意味着并发）。
 
-以下示例显示了它们在协同程序之外的用法：
+以下示例显示了它们在协程之外的用法：
 
 
 ```
@@ -594,7 +593,7 @@ fun main(args: Array<String>) {
 
 ### 协同上下文和调度器
 
-协同程序总是在某些上下文中执行，该上下文由 在Kotlin标准库中定义的CoroutineContext类型的值表示 。
+协程总是在某些上下文中执行，该上下文由 在Kotlin标准库中定义的CoroutineContext类型的值表示 。
 
 协程上下文是一组各种元素。主要元素是我们之前见过的协同工作及其调度程序，本节将对其进行介绍。
 
@@ -649,12 +648,12 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 #### 无限制与受限制的调度器
 
-Dispatchers.Unconfined协程调度程序在调用程序线程中启动协同程序，但只在第一个挂起点之前。
+Dispatchers.Unconfined协程调度程序在调用程序线程中启动协程，但只在第一个挂起点之前。
 暂停后，它将在线程中恢复，该线程完全由调用的挂起函数确定。
-当协同程序不消耗CPU时间也不更新任何局限于特定线程的共享数据（如UI）时，无限制调度程序是合适的。
+当协程不消耗CPU时间也不更新任何局限于特定线程的共享数据（如UI）时，无限制调度程序是合适的。
 
 另一方面，默认情况下，继承外部CoroutineScope的调度程序。 
-特别是runBlocking协同程序的默认调度程序仅限于调用程序线程，因此继承它具有通过可预测的FIFO调度将执行限制在此线程的效果。
+特别是runBlocking协程的默认调度程序仅限于调用程序线程，因此继承它具有通过可预测的FIFO调度将执行限制在此线程的效果。
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -679,8 +678,8 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 ### 调试协程和线程
 
-协同程序可以暂停在一个线程，并恢复与另一个线程开敞调度员或默认多线程调度。即使使用单线程调度程序，
-也可能很难弄清楚协程正在做什么，何时何地。使用线程调试应用程序的常用方法是在每个日志语句的日志文件中打印线程名称。日志框架普遍支持此功能。使用协同程序时，单独的线程名称不会给出很多上下文，因此 kotlinx.coroutines包括调试工具以使其更容易。
+协程可以暂停在一个线程，并恢复与另一个线程开敞调度员或默认多线程调度。即使使用单线程调度程序，
+也可能很难弄清楚协程正在做什么，何时何地。使用线程调试应用程序的常用方法是在每个日志语句的日志文件中打印线程名称。日志框架普遍支持此功能。使用协程时，单独的线程名称不会给出很多上下文，因此 kotlinx.coroutines包括调试工具以使其更容易。
 
 使用-Dkotlinx.coroutines.debugJVM选项运行以下代码：
 
@@ -701,7 +700,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 }
 ```
 
-有三个协同程序。主协程（＃1） - runBlocking一个和两个协程计算延迟值a（＃2）和b（＃3）。
+有三个协程。主协程（＃1） - runBlocking一个和两个协程计算延迟值a（＃2）和b（＃3）。
 它们都在上下文中执行，runBlocking并且仅限于主线程。此代码的输出是：
 
 
@@ -711,7 +710,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 [main @coroutine#1] The answer is 42
 ```
 该log函数在方括号中打印线程的名称，您可以看到它是main 线程，但是当前正在执行的协程的标识符被附加到它。
-打开调试模式时，会将此标识符连续分配给所有已创建的协同程序。
+打开调试模式时，会将此标识符连续分配给所有已创建的协程。
 您可以在newCoroutineContext函数的文档中阅读有关调试工具的更多信息。
 
 
