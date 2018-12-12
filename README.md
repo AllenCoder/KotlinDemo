@@ -10,17 +10,18 @@ grammar_cjkRuby: true
 
 ``` kotlin
 fun main(args: Array<String>) {
-    launch { //在后台启动新的协程并继续 
-        delay(1000L) //非阻塞延迟1秒（默认时间单位为ms） 
+    GlobalScope.launch {
+        //在后台启动新的协程并继续
+        delay(1000L) //非阻塞延迟1秒（默认时间单位为ms）
         println("World!") //延迟后打印
     }
-    println("Hello,") //主线程继续，而协程延迟 
-    Thread.sleep(2000L)//阻塞主线程2秒以保持JVM活动 
+    println("Hello,") //主线程继续，而协程延迟
+    Thread.sleep(2000L)//阻塞主线程2秒以保持JVM活动
 }
 ```
 输出结果
 
-```kotlin
+```
 Hello,
 World!
 
@@ -40,29 +41,43 @@ Error: Kotlin: Suspend functions are only allowed to be called from a coroutine 
 
 第一个示例在同一代码中混合非阻塞 delay(...)和阻塞 Thread.sleep(...)。很容易迷失哪一个阻塞而另一个阻塞。让我们明确说明使用runBlocking coroutine builder进行阻塞：
 
-``` stylus
+``` kotlin
 fun main(args: Array<String>) { 
-    launch { // launch new coroutine in background and continue
-        delay(1000L)
-        println("World!")
-    }
-    println("Hello,") // main thread continues here immediately
-    runBlocking {     // but this expression blocks the main thread
-        delay(2000L)  // ... while we delay for 2 seconds to keep JVM alive
-    } 
+   GlobalScope.launch {
+           // 运行一个新的协程在后台任务
+           delay(1000L)
+           println("World!")
+       }
+       println("Hello,") // 主线程立即执行
+       runBlocking {
+           // 主线程延时2000ms
+           delay(2000L)  //  
+       }
 }
 ```
 
 结果是相同的，但此代码仅使用非阻塞延迟。主线程，调用runBlocking，块，直到协程内runBlocking完成。
 
-这个例子也可以用更惯用的方式重写，runBlocking用来包装main函数的执行：
+这个例子也可以用更常用的方式重写，runBlocking用来包装main函数的执行：
+```kotlin
+import kotlinx.coroutines.*
 
-等待工作
-在另一个协程正在工作时延迟一段时间并不是一个好方法。让我们明确等待（以非阻塞方式），直到我们启动的后台作业完成：
+fun main() = runBlocking<Unit> { // start main coroutine
+    GlobalScope.launch { // launch new coroutine in background and continue
+        delay(1000L)
+        println("World!")
+    }
+    println("Hello,") // main coroutine continues here immediately
+    delay(2000L)      // delaying for 2 seconds to keep JVM alive
+}
+```
 
-``` stylus
+### 等候工作
+当另一个协程正在工作时延迟等待一段时间并不是一个好的方法。我们更希望明确等待（以非阻塞方式），直到我们启动的后台作业完成：
+
+``` kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
-    val job = launch { // launch new coroutine and keep a reference to its Job
+    val job = GlobalScope.launch { // launch new coroutine and keep a reference to its Job
         delay(1000L)
         println("World!")
     }
