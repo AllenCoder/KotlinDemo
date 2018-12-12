@@ -1,14 +1,5 @@
 package coroutines
 
-import com.sun.management.jmx.Trace.send
-import io.reactivex.internal.operators.completable.CompletableDefer
-import javafx.application.Application.launch
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.channels.*
-import kotlin.coroutines.CoroutineContext
-
 /**
  * @author Allen
  * @date : 2018/7/18
@@ -16,10 +7,14 @@ import kotlin.coroutines.CoroutineContext
  * 修改备注：
  */
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.selects.select
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.CoroutineContext
 import kotlin.system.measureTimeMillis
 
 @Volatile
