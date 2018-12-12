@@ -501,17 +501,37 @@ Completed in 1017 ms
 这是两倍的速度，因为我们同时执行了两个协同程序。注意，与协同程序的并发性始终是显式的。
 
 
-### 懒惰地开始异步
-使用值为CoroutineStart.LAZY的可选参数进行异步时有一个惰性选项。它仅在某些等待需要其结果或调用启动函数时才启动协同程序 。运行以下示例，该示例仅与此前一个示例不同：start
+### 懒加载实现异步
 
-```
-fun main(args: Array<String>) = runBlocking<Unit> {
+使用值为CoroutineStart.LAZY的可选参数进行异步时有一个惰性选项。
+它仅在某些等待需要其结果或调用启动函数时才启动协同程序 。运行以下示例，该示例仅与此前一个示例不同：start
+
+```kotlin
+import kotlinx.coroutines.*
+import kotlin.system.*
+
+fun main() = runBlocking<Unit> {
+//sampleStart
     val time = measureTimeMillis {
         val one = async(start = CoroutineStart.LAZY) { doSomethingUsefulOne() }
         val two = async(start = CoroutineStart.LAZY) { doSomethingUsefulTwo() }
+        // some computation
+        one.start() // start the first one
+        two.start() // start the second one
         println("The answer is ${one.await() + two.await()}")
     }
     println("Completed in $time ms")
+//sampleEnd    
+}
+
+suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // pretend we are doing something useful here
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // pretend we are doing something useful here, too
+    return 29
 }
 ```
 
@@ -521,31 +541,38 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 The answer is 42
 Completed in 2017 ms
 ```
-所以，我们回到顺序执行，因为我们首先启动并等待one，然后启动并等待two。它不是懒惰的预期用例。lazy在计算值涉及暂停函数的情况下，它被设计为标准函数的替代。
+所以，这里定义了两个协同程序，但是没有像前面的例子那样执行，但是程序员在完全通过调用start开始执行时会给出控制权。 
+我们首先启动一个，然后启动两个，然后等待各个协同程序完成。
+
+注意，如果我们在println中调用了await并且在各个协程上省略了start，
+那么我们就会得到顺序行为，因为await启动协程执行并等待执行完成，这不是懒惰的预期用例。
+在计算值涉及挂起函数的情况下，async（start = CoroutineStart.LAZY）的用例是标准惰性函数的替代。
 
 
 ### 异步风格的功能
 
-我们可以定义使用异步协同生成器调用doSomethingUsefulOne和doSomethingUsefulTwo 异步调用的异步样式函数。使用“Async”后缀命名此类函数是一种很好的方式，以突出显示它们只启动异步计算并且需要使用结果延迟值来获取结果的事实。
+我们可以定义使用异步协同生成器调用doSomethingUsefulOne和doSomethingUsefulTwo 异步调用的异步样式函数。
+使用“Async”后缀命名此类函数是一种很好的方式，以突出显示它们只启动异步计算并且需要使用结果延迟值来获取结果的事实。
 
-```
+```kotlin
 // somethingUsefulOneAsync的结果类型是Deferred <Int> 
-fun  somethingUsefulOneAsync（） = async {
-    doSomethingUsefulOne（）
+fun  somethingUsefulOneAsync() =GlobalScope.async {
+    doSomethingUsefulOne()
 }
 
 // somethingUsefulTwoAsync的结果类型是Deferred <Int> 
-fun  somethingUsefulTwoAsync（） = async {
-    doSomethingUsefulTwo（）
+fun  somethingUsefulTwoAsync() = GlobalScope.async {
+    doSomethingUsefulTwo()
 }
 ```
 
-注意，这些xxxAsync功能不是 暂停功能。它们可以在任何地方使用。但是，它们的使用总是意味着它们的动作与调用代码的异步（这里意味着并发）。
+注意，这些xxxAsync功能不是 暂停功能。它们可以在任何地方使用。
+但是，它们的使用总是意味着它们的动作与调用代码的异步（这里意味着并发）。
 
 以下示例显示了它们在协同程序之外的用法：
 
 
-```
+```kotlin
 // note, that we don't have `runBlocking` to the right of `main` in this example
 fun main(args: Array<String>) {
     val time = measureTimeMillis {
