@@ -430,10 +430,11 @@ Result is null
 
 ```
 
-### 撰写暂停功能
+### 暂停功能指南
 
 #### 默认顺序
-假设我们在其他地方定义了两个挂起函数，它们可以像某种远程服务调用或计算一样有用。我们只是假装它们很有用，但实际上每个只是为了这个例子的目的而延迟一秒：
+假设我们在其他地方定义了两个挂起函数，它们可以像某种远程服务调用或计算一样有用。
+我们只是假装它们很有用，但实际上每个只是为了这个例子的目的而延迟一秒：
 
 ```
 suspend fun doSomethingUsefulOne(): Int {
@@ -447,13 +448,15 @@ suspend fun doSomethingUsefulTwo(): Int {
 }
 ```
 
-如果需要按顺序调用它们，我们该怎么做- 首先doSomethingUsefulOne 然后 doSomethingUsefulTwo计算结果的总和？实际上，如果我们使用第一个函数的结果来决定是否需要调用第二个函数或决定如何调用它，我们就会这样做。
+如果需要按顺序调用它们，我们该怎么做- 首先doSomethingUsefulOne 然后 doSomethingUsefulTwo计算结果的总和？
+实际上，如果我们使用第一个函数的结果来决定是否需要调用第二个函数或决定如何调用它，我们就会这样做。
 
-我们只使用正常的顺序调用，因为协程中的代码与常规代码中的代码一样，默认是顺序的。以下示例通过测量执行两个挂起函数所需的总时间来演示它：
+我们只使用正常的顺序调用，因为协程中的代码与常规代码中的代码一样，默认是顺序的。
+以下示例通过测量执行两个挂起函数所需的总时间来演示它：
 
 
 
-```
+```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     val time = measureTimeMillis {
         val one = doSomethingUsefulOne()
