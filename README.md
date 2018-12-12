@@ -590,18 +590,20 @@ fun main(args: Array<String>) {
 
 ```
 
-### 协同上下文和调度员
+### 协同上下文和调度器
 
 协同程序总是在某些上下文中执行，该上下文由 在Kotlin标准库中定义的CoroutineContext类型的值表示 。
 
 协程上下文是一组各种元素。主要元素是我们之前见过的协同工作及其调度程序，本节将对其进行介绍。
 
 
-### 调度员和线程
+### 调度器和线程
 
-协程上下文包括一个协程调度程序（请参阅CoroutineDispatcher），它确定相应的协程用于执行的线程。协程调度程序可以将协程执行限制在特定线程，将其分派给线程池，或让它无限制地运行。
+协程上下文包括一个协程调度程序（请参阅CoroutineDispatcher），它确定相应的协程用于执行的线程。
+协程调度程序可以将协程执行限制在特定线程，将其分派给线程池，或让它无限制地运行。
 
-所有协同构建器（如launch和async）都接受一个可选的 CoroutineContext 参数，该参数可用于显式指定新协程和其他上下文元素的调度程序。
+所有协同构建器（如launch和async）都接受一个可选的 CoroutineContext 参数，
+该参数可用于显式指定新协程和其他上下文元素的调度程序。
 
 请尝试以下示例：
 
@@ -633,21 +635,26 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 'coroutineContext': I'm working in thread main
 ```
 
-我们在前面部分中使用的默认调度程序由DefaultDispatcher表示，它等于当前实现中的CommonPool。所以，launch { ... }是一样的launch(DefaultDispatcher) { ... }，它是一样的launch(CommonPool) { ... }。
+我们在前面部分中使用的默认调度程序由DefaultDispatcher表示，
+它等于当前实现中的CommonPool。所以，launch { ... }是一样的launch(DefaultDispatcher) { ... }，
+它是一样的launch(CommonPool) { ... }。
 
 父coroutineContext和 Unconfined上下文之间的区别 将在稍后显示。
 
-注意，newSingleThreadContext创建一个新线程，这是一个非常昂贵的资源。在实际应用程序中，它必须在不再需要时释放，使用close 函数，或者存储在顶级变量中并在整个应用程序中重用。
+注意，newSingleThreadContext创建一个新线程，这是一个非常昂贵的资源。
+在实际应用程序中，它必须在不再需要时释放，使用close 函数，或者存储在顶级变量中并在整个应用程序中重用。
 
 
-#### 无限制与受限制的调度员
+#### 无限制与受限制的调度器
 
+Dispatchers.Unconfined协程调度程序在调用程序线程中启动协同程序，但只在第一个挂起点之前。
+暂停后，它将在线程中恢复，该线程完全由调用的挂起函数确定。
+当协同程序不消耗CPU时间也不更新任何局限于特定线程的共享数据（如UI）时，无限制调度程序是合适的。
 
-该开敞协程调度员开始协程在调用线程，但直到第一个悬挂点。暂停后，它将在线程中恢复，该线程完全由调用的挂起函数确定。当协同程序不消耗CPU时间也不更新任何局限于特定线程的共享数据（如UI）时，无限制调度程序是合适的。
+另一方面，默认情况下，继承外部CoroutineScope的调度程序。 
+特别是runBlocking协同程序的默认调度程序仅限于调用程序线程，因此继承它具有通过可预测的FIFO调度将执行限制在此线程的效果。
 
-另一方面， coroutineContext 属性（在任何协同程序中可用）是对此特定协同程序的上下文的引用。这样，可以继承父上下文。特别是runBlocking协同程序的默认调度程序仅限于调用程序线程，因此继承它具有通过可预测的FIFO调度将执行限制在此线程的效果。
-
-```
+```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     val jobs = arrayListOf<Job>()
     jobs += launch(Unconfined) { // not confined -- will work with main thread
@@ -664,12 +671,14 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 }
 ```
 
-所以，这继承了协程coroutineContext的runBlocking {...}继续在执行main线程，而不受限制一个曾在默认执行线程重新恢复延迟 功能使用。
+所以，这继承了协程coroutineContext的runBlocking {...}继续在执行main线程，
+而不受限制一个曾在默认执行线程重新恢复延迟 功能使用。
 
 
 ### 调试协程和线程
 
-协同程序可以暂停在一个线程，并恢复与另一个线程开敞调度员或默认多线程调度。即使使用单线程调度程序，也可能很难弄清楚协程正在做什么，何时何地。使用线程调试应用程序的常用方法是在每个日志语句的日志文件中打印线程名称。日志框架普遍支持此功能。使用协同程序时，单独的线程名称不会给出很多上下文，因此 kotlinx.coroutines包括调试工具以使其更容易。
+协同程序可以暂停在一个线程，并恢复与另一个线程开敞调度员或默认多线程调度。即使使用单线程调度程序，
+也可能很难弄清楚协程正在做什么，何时何地。使用线程调试应用程序的常用方法是在每个日志语句的日志文件中打印线程名称。日志框架普遍支持此功能。使用协同程序时，单独的线程名称不会给出很多上下文，因此 kotlinx.coroutines包括调试工具以使其更容易。
 
 使用-Dkotlinx.coroutines.debugJVM选项运行以下代码：
 
@@ -690,7 +699,8 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 }
 ```
 
-有三个协同程序。主协程（＃1） - runBlocking一个和两个协程计算延迟值a（＃2）和b（＃3）。它们都在上下文中执行，runBlocking并且仅限于主线程。此代码的输出是：
+有三个协同程序。主协程（＃1） - runBlocking一个和两个协程计算延迟值a（＃2）和b（＃3）。
+它们都在上下文中执行，runBlocking并且仅限于主线程。此代码的输出是：
 
 
 ```
@@ -698,8 +708,8 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 [main @coroutine#3] I'm computing another piece of the answer
 [main @coroutine#1] The answer is 42
 ```
-该log函数在方括号中打印线程的名称，您可以看到它是main 线程，但是当前正在执行的协程的标识符被附加到它。打开调试模式时，会将此标识符连续分配给所有已创建的协同程序。
-
+该log函数在方括号中打印线程的名称，您可以看到它是main 线程，但是当前正在执行的协程的标识符被附加到它。
+打开调试模式时，会将此标识符连续分配给所有已创建的协同程序。
 您可以在newCoroutineContext函数的文档中阅读有关调试工具的更多信息。
 
 
@@ -756,7 +766,8 @@ My job is "coroutine#1":BlockingCoroutine{Active}@6d311334
 
 ### 子协程
 
-当 coroutineContext 协程的用于启动另一个协程，该工作新协程成为孩子的家长协程的工作。当父协程被取消时，它的所有子节点也会被递归取消。
+当 coroutineContext 协程的用于启动另一个协程，该工作新协程成为孩子的家长协程的工作。
+当父协程被取消时，它的所有子节点也会被递归取消。
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -796,7 +807,8 @@ main: Who has survived request cancellation?
 ```
 
 ### 结合上下文
-可以使用+运算符组合协程上下文。右侧的上下文替换了左侧上下文的相关条目。例如，可以继承父协程的Job，同时替换其调度程序：
+可以使用+运算符组合协程上下文。右侧的上下文替换了左侧上下文的相关条目。
+例如，可以继承父协程的Job，同时替换其调度程序：
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -827,7 +839,7 @@ main: Who has survived request cancellation?
 
 ```
 
-### 父母的责任
+### 父协程的职责
 父协同程序总是等待所有孩子的完成。Parent不必显式跟踪它启动的所有子节点，也不必使用Job.join在结束时等待它们：
 
 
@@ -937,7 +949,7 @@ Cancelling the job!
 正如你所看到的，只有前三个协同程序打印了一条消息，而其他协同程序被一次调用取消了job.cancelAndJoin()。因此，我们在假设的Android应用程序中需要做的就是在创建活动时创建父作业对象，将其用于子协同程序，并在销毁活动时取消它。我们不能join在Android生命周期的情况下使用它们，因为它是同步的，但是这种连接能力在构建后端服务以确保有限的资源使用时非常有用。
 
 
-### 通道
+### 管道
 
 延迟值提供了在协同程序之间传输单个值的便捷方法。管道提供了一种传输值流的方法。
 
