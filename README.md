@@ -1184,7 +1184,7 @@ Processor #3 received 10
 多个协同程序可以发送到同一个通道。例如，让我们有一个字符串通道和一个挂起函数，它以指定的延迟重复发送指定的字符串到此通道：
 
 
-``` 
+```kotlin
 suspend fun sendString(channel: SendChannel<String>, s: String, time: Long) {
     while (true) {
         delay(time)
@@ -1196,7 +1196,7 @@ suspend fun sendString(channel: SendChannel<String>, s: String, time: Long) {
 现在，让我们看看如果我们启动几个协同程序发送字符串会发生什么（在这个例子中，我们在主线程的上下文中将它们作为主协程的子节点启动）：
 
 
-``` 
+```kotlin 
 fun main(args: Array<String>) = runBlocking<Unit> {
     val channel = Channel<String>()
     launch(coroutineContext) { sendString(channel, "foo", 200L) }
@@ -1230,7 +1230,7 @@ BAR!
 看一下以下代码的行为：
 
 
-``` stylus
+```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     val channel = Channel<Int>(4) // create buffered channel
     val sender = launch(coroutineContext) { // launch sender coroutine
@@ -1246,7 +1246,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 ```
 它使用容量为4的缓冲通道打印“发送” 五次：
 
-``` stylus
+```kotlin
 Sending 0
 Sending 1
 Sending 2
@@ -1262,7 +1262,7 @@ Ticker通道是一个特殊的会合通道，Unit每次从此通道上次消耗�
 
 要创建此类渠道，请使用工厂方法代码。要指示不需要其他元素，请使用ReceiveChannel.cancel方法。
 
-``` 
+```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     val tickerChannel = ticker(delay = 100, initialDelay = 0) // create ticker channel
     var nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
@@ -1289,9 +1289,10 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 
 ```
+
 它打印以下行：
 
-``` stylus
+```kotlin
 
 Initial element is available immediately: kotlin.Unit
 Next element is not ready in 50 ms: null
@@ -1310,7 +1311,7 @@ Next element is ready in 50ms after consumer pause in 150ms: kotlin.Unit
 
 对于从多个协同程序调用它们的顺序，向通道发送和接收操作是公平的。它们以先进先出顺序提供，例如，要调用的第一个协程receive 获取元素。在以下示例中，两个协程“ping”和“pong”正在从共享的“table”通道接收“ball”对象。
 
-``` stylus
+```kotlin
 data class Ball(var hits: Int)
 
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -1334,7 +1335,7 @@ suspend fun player(name: String, table: Channel<Ball>) {
 
 “ping”协程首先启动，因此它是第一个接收球的人。即使“ping”coroutine在将球送回桌面后立即再次接球，球也会被“pong”协程接收，因为它已经在等待它了：
 
-``` stylus
+```kotlin
 ping Ball(hits=1)
 pong Ball(hits=2)
 ping Ball(hits=3)
@@ -1352,7 +1353,7 @@ pong Ball(hits=4)
 让我们推出一千个协同程序，它们都做了一千次相同的动作（总计一百万次执行）。我们还将测量完成时间以进行进一步比较：
 
 
-``` stylus
+```kotlin
 suspend fun massiveRun(context: CoroutineContext, action: suspend () -> Unit) {
     val n = 1000 // number of coroutines to launch
     val k = 1000 // times an action is repeated by each coroutine
@@ -1369,7 +1370,7 @@ suspend fun massiveRun(context: CoroutineContext, action: suspend () -> Unit) {
 ```
 我们从一个非常简单的操作开始，该操作使用多线程CommonPool上下文来增加共享的可变变量。
 
-``` stylus
+```kotlin
 var counter = 0
 
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -1385,7 +1386,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 > 注意：如果您的旧系统具有2个或更少的CPU，那么您将始终看到1000000，因为 CommonPool在这种情况下仅在一个线程中运行。要重现此问题，您需要进行以下更改：
 
-``` 
+```kotlin
 
 val mtContext = newFixedThreadPoolContext(2, "mtPool") // explicitly define context with two threads
 var counter = 0
@@ -1403,7 +1404,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 > 注意：如果您的旧系统具有2个或更少的CPU，那么您将始终看到1000000，因为 CommonPool在这种情况下仅在一个线程中运行。要重现此问题，您需要进行以下更改：
 
-``` 
+```kotlin 
 val mtContext = newFixedThreadPoolContext(2, "mtPool") // explicitly define context with two threads
 var counter = 0
 
@@ -1418,7 +1419,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 **Volatiles** 没有任何帮助
 有一个常见的误解是，使变量volatile解决了并发问题。让我们试一试：
 
-``` 
+```kotlin 
 @Volatile // in Kotlin `volatile` is an annotation 
 var counter = 0
 
@@ -1437,7 +1438,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 适用于线程和协同程序的通用解决方案是使用线程安全（也称为同步，可线性化或原子）数据结构，该数据结构为需要在共享状态上执行的相应操作提供所有必需的同步。在简单计数器的情况下，我们可以使用AtomicInteger具有原子incrementAndGet操作的类：
 
-``` stylus
+```kotlin
 var counter = AtomicInteger()
 
 fun main(args: Array<String>) = runBlocking<Unit> {
