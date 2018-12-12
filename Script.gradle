@@ -1,0 +1,4 @@
+group = "Script"
+version = "1.0"
+
+print("10000")
