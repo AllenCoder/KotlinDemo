@@ -374,9 +374,10 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 ```
 
 超时退出
-在实践中取消协程执行的最明显的原因是因为它的执行时间超过了一些超时。虽然您可以手动跟踪对相应作业的引用并启动单独的协同程序以在延迟后取消跟踪的协程，但是有一个准备好使用withTimeout函数执行此操作。请看以下示例：
+在实践中取消协程执行的最明显的原因是因为它的执行时间超过了一些超时。虽然您可以手动跟踪对相应作业的引用并启动单独的协同程序以在延迟后取消跟踪的协程，
+但是有一个准备好使用withTimeout函数执行此操作。请看以下示例：
 
-```
+```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     withTimeout(1300L) {
         repeat(1000) { i ->
@@ -396,9 +397,14 @@ Exception in thread "main" kotlinx.coroutines.experimental.TimeoutCancellationEx
 
 
 
-该TimeoutCancellationException由抛出withTimeout是的子类CancellationException。我们之前没有看到它的堆栈跟踪打印在控制台上。这是因为在取消的协程中CancellationException被认为是协程完成的正常原因。但是，在这个例子中我们withTimeout在main函数内部使用了。
+该TimeoutCancellationException由抛出withTimeout是的子类CancellationException。
+我们之前没有看到它的堆栈跟踪打印在控制台上。这是因为在取消的协程中CancellationException被认为是协程完成的正常原因。
+但是，在这个例子中我们withTimeout在main函数内部使用了。
 
-因为取消只是一个例外，所有资源都将以通常的方式关闭。您可以在超时包裹代码try {...} catch (e: TimeoutCancellationException) {...}块，如果你需要专门做一些额外的行动在任何类型的超时或使用withTimeoutOrNull功能类似于withTimeout，但返回null的超时，而不是抛出一个异常：
+因为取消只是一个例外，所有资源都将以通常的方式关闭。
+您可以在超时包裹代码try {...} catch (e: TimeoutCancellationException) {...}块，
+如果你需要专门做一些额外的行动在任何类型的超时或使用withTimeoutOrNull功能类似于withTimeout，
+但返回null的超时，而不是抛出一个异常：
 
 
 ```
