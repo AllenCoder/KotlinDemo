@@ -1006,7 +1006,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     println("Done!")
 }
 ```
-### 建立渠道生产者
+### 建立通道 生产者
 
 协程生成一系列元素的模式很常见。这是生产者 - 消费者模式的一部分，通常在并发代码中找到。您可以将这样的生成器抽象为一个以通道作为参数的函数，但这与必须从函数返回结果的常识相反。
 
@@ -1026,10 +1026,10 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 ```
 ### **管道**
 
-管道是一个协程正在生成的模式，可能是无限的值流：
+管道是一种模式，其中一个协作程序正在产生，可能是无限的值流:
 
 
-```
+```kotlin
 fun produceNumbers() = produce<Int> {
     var x = 1
     while (true) send(x++) // infinite stream of integers starting from 1
@@ -1059,12 +1059,15 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 }
 ```
 
-我们不必在这个示例应用程序中取消这些协同程序，因为 协同程序就像守护程序线程，但是在更大的应用程序中，如果我们不再需要它，我们将需要停止我们的管道。或者，我们可以运行管道协同程序作为 主协程的子代，如以下示例所示。
+我们不必在这个示例应用程序中取消这些协同程序，因为 协同程序就像守护程序线程，
+但是在更大的应用程序中，如果我们不再需要它，我们将需要停止我们的管道。
+或者，我们可以运行管道协同程序作为 主协程的子代，如以下示例所示。
 
 ### 带管道的素数
-让我们通过一个使用协程管道生成素数的例子将管道带到极端。我们从无限的数字序列开始。这次我们引入一个显式context参数并将其传递给generate构建器，以便调用者可以控制我们的协程运行的位置：
+让我们通过一个使用协程管道生成素数的例子将管道带到极端。我们从无限的数字序列开始。
+这次我们引入一个显式context参数并将其传递给generate构建器，以便调用者可以控制我们的协程运行的位置：
 
-``` stylus
+```kotlin
 fun numbersFrom(context: CoroutineContext, start: Int) = produce<Int>(context) {
     var x = start
     while (true) send(x++) // infinite stream of integers from start
@@ -1072,19 +1075,19 @@ fun numbersFrom(context: CoroutineContext, start: Int) = produce<Int>(context) {
 ```
 以下管道阶段过滤传入的数字流，删除可由给定素数整除的所有数字：
 
-``` stylus
+```kotlin
 fun filter(context: CoroutineContext, numbers: ReceiveChannel<Int>, prime: Int) = produce<Int>(context) {
     for (x in numbers) if (x % prime != 0) send(x)
 }
 ```
 现在我们通过从2开始一个数字流来构建我们的管道，从当前通道获取素数，并为找到的每个素数启动新的管道阶段：
 
-``` stylus
+```kotlin
 numbersFrom(2) -> filter(2) -> filter(3) -> filter(5) -> filter(7) ... 
 ```
 以下示例打印前十个素数，在主线程的上下文中运行整个管道。由于所有协同程序都是在其coroutineContext中作为主runBlocking协程的 子进程启动的，因此我们不必保留我们已经启动的所有协同程序的明确列表。我们使用cancelChildren 扩展函数取消所有子协同程序。
 
-``` stylus
+```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     var cur = numbersFrom(coroutineContext, 2)
     for (i in 1..10) {
@@ -1113,16 +1116,18 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 29
 ```
 
-请注意，您可以使用buildIterator 标准库中的coroutine builder 来构建相同的管道 。更换produce用buildIterator，send用yield，receive用next， ReceiveChannel用Iterator，并摆脱上下文。你也不需要runBlocking。但是，如上所示使用通道的管道的好处是，如果在CommonPool上下文中运行它，它实际上可以使用多个CPU内核。
-
-无论如何，这是找到素数的极不切实际的方法。在实践中，管道确实涉及一些其他挂起调用（如对远程服务的异步调用），并且这些管道不能使用buildSeqeunce/ 构建buildIterator，因为它们不允许任意挂起，这与produce完全异步完全不同 。
+请注意，您可以使用buildIterator 标准库中的coroutine builder 来构建相同的管道 。
+更换produce用buildIterator，send用yield，receive用next， ReceiveChannel用Iterator，并摆脱上下文。
+你也不需要runBlocking。但是，如上所示使用通道的管道的好处是，如果在CommonPool上下文中运行它，它实际上可以使用多个CPU内核。
+无论如何，这是找到素数的极不切实际的方法。在实践中，管道确实涉及一些其他挂起调用（如对远程服务的异步调用），
+并且这些管道不能使用buildSeqeunce/ 构建buildIterator，因为它们不允许任意挂起，这与produce完全异步完全不同 。
 
 ### 扇出
 
 
 多个协同程序可以从同一个通道接收，在它们之间分配工作。让我们从生成器协程开始，它定期生成整数（每秒十个数字）：
 
-``` stylus
+```kotlin
 fun produceNumbers() = produce<Int> {
     var x = 1 // start from 1
     while (true) {
@@ -1134,7 +1139,7 @@ fun produceNumbers() = produce<Int> {
 
 然后我们可以有几个处理器协同程序。在这个例子中，他们只打印他们的id和收到的号码：
 
-``` stylus
+```kotlin
 fun launchProcessor(id: Int, channel: ReceiveChannel<Int>) = launch {
     for (msg in channel) {
         println("Processor #$id received $msg")
@@ -1339,7 +1344,8 @@ pong Ball(hits=4)
 
 
 #### 共享可变状态和并发
-可以使用多线程调度程序（如默认的CommonPool）同时执行协同程序。它提出了所有常见的并发问题。主要问题是同步访问共享可变状态。在协同程序领域，这个问题的一些解决方案类似于多线程世界中的解决方案，但其他解决方案是独一无二的。
+可以使用多线程调度程序（如默认的CommonPool）同时执行协同程序。它提出了所有常见的并发问题。
+主要问题是同步访问共享可变状态。在协同程序领域，这个问题的一些解决方案类似于多线程世界中的解决方案，但其他解决方案是独一无二的。
  
 #### 问题
 
@@ -1449,7 +1455,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 线程限制是解决共享可变状态问题的一种方法，其中对特定共享状态的所有访问都限于单个线程。它通常用于UI应用程序，其中所有UI状态都局限于单个事件派发/应用程序线程。使用
 单线程上下文很容易应用协同程序：
 
-``` stylus
+```kotlin
 val counterContext = newSingleThreadContext("CounterContext")
 var counter = 0
 
@@ -1469,7 +1475,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 实际上，线程限制是在大块中执行的，例如，大块状态更新业务逻辑仅限于单个线程。下面的示例就是这样，在单线程上下文中运行每个协程开始。
 
-``` 
+```kotlin
 val counterContext = newSingleThreadContext("CounterContext")
 var counter = 0
 
@@ -1487,7 +1493,7 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 该问题的相互排除解决方案 是使用永远不会同时执行的关键部分来保护共享状态的所有修改。在一个阻塞的世界中，你通常会使用synchronized或ReentrantLock为此而使用。Coroutine的替代品叫做Mutex。它具有锁定和解锁功能，可以分隔关键部分。关键的区别在于它Mutex.lock()是一个暂停功能。它不会阻塞线程。
 还有withLock扩展功能，方便代表 mutex.lock(); try { ... } finally { mutex.unlock() }模式：
 
-``` 
+```kotlin
 val mutex = Mutex()
 var counter = 0
 
