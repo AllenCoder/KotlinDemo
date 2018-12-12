@@ -86,12 +86,68 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 }
 ```
 
+### 结构化并发
+
+1303/5000
+对于协同程序的实际使用仍有一些需要。当我们使用GlobalScope.launch时，我们创建了一个顶级协程。
+尽管它很轻，但它在运行时仍会消耗一些内存资源。如果我们忘记保留对新启动的协程的引用，它仍会运行。
+如果协同程序中的代码挂起（例如，我们错误地延迟了太长时间），如果我们启动了太多的协程并且内存不足会怎么样？
+必须手动保持对所有已启动的协同程序的引用并加入它们是容易出错的。有一个更好的解决方案。
+我们可以在代码中使用结构化并发。就像我们通常使用线程（线程总是全局的）一样，
+我们可以在我们正在执行的操作的特定范围内启动协同程序，而不是在GlobalScope中启动协同程序。
+在我们的示例中，我们使用runBlocking coroutine builder将main函数转换为协程。每个协程构建器（包括runBlocking）
+都将CoroutineScope的实例添加到其代码块的范围内。我们可以在此范围内启动协程，
+而无需显式连接它们，因为在其范围内启动的所有协程完成之前，外部协程（在我们的示例中为runBlocking）不会完成。因此，我们可以使我们的示例更简单：
+
+```kotlin
+import kotlinx.coroutines.*
+
+fun main() = runBlocking { // this: CoroutineScope
+    launch { // 运行一个协程在runBlocking作用域
+        delay(1000L)
+        println("World!")
+    }
+    println("Hello,")
+}
+```
+
+### 作用域构建器
+
+除了由不同构建器提供的协同作用域之外，还可以使用coroutineScope构建器声明自己的作用域。
+它会创建新的协程范围，并且在所有已启动的子项完成之前不会完成。
+runBlocking和coroutineScope之间的主要区别在于后者在等待所有子进程完成时不会阻塞当前线程。
+
+```kotlin
+fun main() = runBlocking { // this: CoroutineScope
+    launch {
+        delay(200L)
+        println("Task from runBlocking")
+    }
+
+    coroutineScope { // Creates a new coroutine scope
+        launch {
+            delay(500L)
+            println("Task from nested launch")
+        }
+
+        delay(100L)
+        println("Task from coroutine scope") // This line will be printed before nested launch
+    }
+
+    println("Coroutine scope is over") // 直到所有任务执行完成打印
+}
+```
+
+
 ### 提取函数重构
-让我们将代码块提取launch { ... }到一个单独的函数中。当您对此代码执行“提取功能”重构时，您将获得带有suspend修饰符的新功能。这是你的第一个暂停功能。挂起函数可以在协程内部使用，就像常规函数一样，但它们的附加功能是它们可以反过来使用其他挂起函数（如delay本示例中所示）来暂停协程的执行。
+让我们将代码块提取launch { ... }到一个单独的函数中。
+当您对此代码执行“提取功能”重构时，您将获得带有suspend修饰符的新功能。
+这是你的第一个暂停功能。挂起函数可以在协程内部使用，就像常规函数一样，
+但它们的附加功能是它们可以反过来使用其他挂起函数（如delay本示例中所示）来暂停协程的执行。
 
 
 
-``` stylus
+``` kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     val job = launch { doWorld() }
     println("Hello,")
@@ -104,6 +160,14 @@ suspend fun doWorld() {
     println("World!")
 }
 ```
+
+但是，如果提取的函数包含在当前作用域上调用的协程构建器，该怎么办？
+在这种情况下，提取函数上的suspend修饰符是不够的。 在CoroutineScope上
+制作doWorld扩展方法是其中一种解决方案，但它可能并不总是适用，
+因为它不会使API更清晰。 惯用解决方案是将显式CoroutineScope作为包含目标函数的类中的字段，
+或者在外部类实现CoroutineScope时隐式。 作为最后的手段，
+可以使用CoroutineScope（coroutineContext），但是这种方法在结构上是不安全的，
+因为您不再能够控制此方法的执行范围。 只有私有API才能使用此构建器。
 
 ### 协同程序足够轻量级
 
@@ -119,15 +183,16 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     jobs.forEach { it.join() } // wait for all jobs to complete
 }
 ```
-它启动了100K协同程序，一秒钟之后，每个协同程序都打印出一个点。现在，尝试使用线程。会发生什么？（很可能你的代码会产生某种内存不足的错误）
+它启动了100K协同程序，一秒钟之后，每个协同程序都打印出一个点。
+现在，尝试使用线程。会发生什么？（很可能你的代码会产生某种内存不足的错误）
 
 ### 协同程序就像守护程序线程
 下面的代码启动一个长时间运行的协同程序，每秒打印“我正在睡觉”两次，然后在一段延迟后从main函数返回：
 
 
 ```
-fun main(args: Array<String>) = runBlocking<Unit> {
-    launch {
+fun main(args: Array<String>) = runBlocking{
+    GlobalScope.launch {
         repeat(1000) { i ->
             println("I'm sleeping $i ...")
             delay(500L)
@@ -149,7 +214,8 @@ I'm sleeping 2 ...
 
 ### 取消和超时
 
-在小应用程序中，从“main”方法返回可能听起来像是一个好主意，以便隐式终止所有协同程序。在较大的长期运行的应用程序中，您需要更精细的控制。在推出函数返回一个作业，可用于取消运行协程：
+在小应用程序中，从“main”方法返回可能听起来像是一个好主意，以便隐式终止所有协同程序。
+在较大的长期运行的应用程序中，您需要更精细的控制。在推出函数返回一个作业，可用于取消运行协程：
 
 
 ```
@@ -177,11 +243,13 @@ main: I'm tired of waiting!
 main: Now I can quit.
 ```
 
-主调用后job.cancel，我们看不到其他协同程序的任何输出，因为它已被取消。还有一个Job扩展函数cancelAndJoin ，它结合了取消和连接调用。
+主调用后job.cancel，我们看不到其他协同程序的任何输出，因为它已被取消。
+还有一个Job扩展函数cancelAndJoin ，它结合了取消和连接调用。
 
-### 取消是合作的
+### 取消是协同的
 
-协同取消是合作的。协程代码必须合作才能取消。所有挂起函数kotlinx.coroutines都是可取消的。他们检查coroutine的取消并在取消时抛出CancellationException。但是，如果协程正在计算中并且未检查取消，则无法取消它，如下例所示：
+协程取消是协同的。协程代码必须合作才能取消。所有挂起函数kotlinx.coroutines都是可取消的。
+他们检查coroutine的取消并在取消时抛出CancellationException。但是，如果协程正在计算中并且未检查取消，则无法取消它，如下例所示：
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {
@@ -218,7 +286,8 @@ main Now I can quit
 ```
 
 ### 使计算代码可取消
-有两种方法可以使计算代码可以取消。第一个是定期调用检查取消的挂起功能。有一个收益率的功能是实现这一目的的好选择。另一个是明确检查取消状态。让我们尝试后一种方法。
+有两种方法可以使计算代码可以取消。第一个是定期调用检查取消的挂起功能。
+有一个收益率的功能是实现这一目的的好选择。另一个是明确检查取消状态。让我们尝试后一种方法。
 
 ```
 fun main(args: Array<String>) = runBlocking<Unit> {

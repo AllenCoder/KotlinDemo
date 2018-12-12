@@ -20,14 +20,25 @@ fun main(args: Array<String>) {
 //    println("Hello,") //主线程继续，而协程延迟
 //    Thread.sleep(2000L)//阻塞主线程2秒以保持JVM活动
 
-    GlobalScope.launch {
-        // 运行一个新的协程在后台任务
-        delay(1000L)
-        println("World!")
-    }
-    println("Hello,") // 主线程立即执行
+
+//    GlobalScope.launch {
+//        // 运行一个新的协程在后台任务
+//        delay(1000L)
+//        println("World!")
+//    }
+//    println("Hello,") // 主线程立即执行
+//    runBlocking {
+//        // 主线程延时2000ms
+//        delay(2000L)  //
+//    }
     runBlocking {
-        // 主线程延时2000ms
-        delay(2000L)  //
+        GlobalScope.launch {
+            repeat(1000) { i ->
+                println("I'm sleeping $i ...")
+                delay(500L)
+            }
+        }
+        delay(1600L) // just quit after delay
     }
+
 }
