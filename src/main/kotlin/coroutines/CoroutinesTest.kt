@@ -37,21 +37,6 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     coroutineContext.cancelChildren()
 
 }
-suspend fun selectAorB(a: ReceiveChannel<String>, b: ReceiveChannel<String>): String =
-        select<String> {
-            a.onReceiveOrNull { value ->
-                if (value == null)
-                    "Channel 'a' is closed"
-                else
-                    "a -> '$value'"
-            }
-            b.onReceiveOrNull { value ->
-                if (value == null)
-                    "Channel 'b' is closed"
-                else
-                    "b -> '$value'"
-            }
-        }
 //fun fizz(context: CoroutineContext) = produce<String>(context) {
 //    GlobalScope.launch {
 //        while (true) {
@@ -70,16 +55,6 @@ suspend fun selectAorB(a: ReceiveChannel<String>, b: ReceiveChannel<String>): St
 //    }
 //}
 
-suspend fun selectFizzBuzz(fizz: ReceiveChannel<String>, buzz: ReceiveChannel<String>) {
-    select<Unit> {
-        fizz.onReceive { value ->
-            println("fizz ->'$value")
-        }
-        buzz.onReceive { value ->
-            println("buzz->$value")
-        }
-    }
-}
 
 //fun counterActor() = actor<CounterMsg> {
 //    var counter = 0
@@ -104,9 +79,3 @@ suspend fun massiveRun(context: CoroutineContext, action: suspend () -> Unit) {
     }
     println("Completed ${n * k} actions in $time ms")
 }
-
-sealed class CounterMsg
-
-object IncCounter : CounterMsg()
-
-class GetCounter(val response: CompletableDeferred<Int>) : CounterMsg()

@@ -1512,11 +1512,13 @@ fun main(args: Array<String>) = runBlocking<Unit> {
 
 ### Actors
 
-的演员是由一个协程，即被限制和封装到该协程的状态下，并与其他协同程序进行通信的信道的组合的实体。一个简单的actor可以写成一个函数，但是一个具有复杂状态的actor更适合一个类。
-
-有一个actor协程构建器，它可以方便地将actor的邮箱通道组合到其作用域中，以便从发送通道接收消息并将其组合到生成的作业对象中，这样对actor的单个引用就可以作为其句柄携带。
-
-使用actor的第一步是定义一个actor要处理的消息类。Kotlin的密封课程非常适合这个目的。我们CounterMsg使用IncCounter消息定义密封类以增加计数器和GetCounter消息以获取其值。后者需要发送回复。甲CompletableDeferred通信原码，即表示将在将来已知的（传送）一个单一的值，在这里用于该目的。
+actor是一个由coroutine，被限制和封装到该协程中的状态组成的实体，以及与其他协同程序通信的通道。
+一个简单的actor可以写成一个函数，但是一个具有复杂状态的actor更适合一个类。
+有一个actor coroutine builder可以方便地将actor的邮箱通道组合到其范围内，
+以接收来自的发送通道并将发送通道组合到生成的作业对象，以便对actor的单个引用可以作为其句柄携带。
+使用actor的第一步是定义一个actor将要处理的消息类。 Kotlin的密封课程非常适合这个目的。
+我们使用IncCounter消息定义CounterMsg密封类以增加计数器和GetCounter消息以获取其值。
+后者需要发送回复。 CompletableDeferred通信原语表示将来已知（通信）的单个值，此处用于此目的。
 
 ``` 
 sealed class CounterMsg
@@ -1555,7 +1557,8 @@ fun main(args: Array<String>) = runBlocking<Unit> {
     counter.close() // shutdown the actor
 }
 ```
-执行者本身执行的上下文无关紧要（正确性）。一个actor是一个协程，一个协同程序按顺序执行，因此将状态限制到特定协程可以解决共享可变状态的问题。实际上，演员可以修改自己的私有状态，但只能通过消息相互影响（避免任何锁定）。
+执行者本身执行的上下文无关紧要（正确性）。一个actor是一个协程，一个协同程序按顺序执行，因此将状态限制到特定协程可以解决共享可变状态的问题。
+实际上，actor可以修改自己的私有状态，但只能通过消息相互影响（避免任何锁定）。
 
 
 Actor比在负载下锁定更有效，因为在这种情况下它总是有工作要做，而且根本不需要切换到不同的上下文。
@@ -1570,7 +1573,7 @@ Actor比在负载下锁定更有效，因为在这种情况下它总是有工作
 
 让我们有两个字符串生成器：fizz和buzz。该fizz生产“菲斯”串每300毫秒：
 
-``` 
+```kotlin
 fun fizz(context: CoroutineContext) = produce<String>(context) {
     while (true) { // sends "Fizz" every 300 ms
         delay(300)
@@ -1581,7 +1584,7 @@ fun fizz(context: CoroutineContext) = produce<String>(context) {
 
 而buzz产品“Buzz！” 字符串每500毫秒：
 
-``` 
+```kotlin
 fun buzz(context: CoroutineContext) = produce<String>(context) {
     while (true) { // sends "Buzz!" every 500 ms
         delay(500)
@@ -1632,7 +1635,9 @@ buzz -> 'Buzz!'
 ```
 ### 选择关闭
 
-所述的onReceive条款select当信道被关闭引起相应失败 select抛出异常。我们可以使用onReceiveOrNull子句在关闭通道时执行特定操作。以下示例还显示该select表达式返回其所选子句的结果：
+所述的onReceive条款select当信道被关闭引起相应失败 select抛出异常。
+我们可以使用onReceiveOrNull子句在关闭通道时执行特定操作。
+以下示例还显示该select表达式返回其所选子句的结果：
 
 
 ``` 
@@ -1742,7 +1747,8 @@ Consuming 10
 Done consuming
 ```
 
-#### 选择延期值
+#### 选择延迟值
+
 可以使用onAwait子句选择延迟值。让我们从一个异步函数开始，该函数在随机延迟后返回一个延迟字符串值：
 
 ``` 
@@ -1763,7 +1769,7 @@ fun asyncStringsList(): List<Deferred<String>> {
 
 现在，主函数等待第一个函数完成并计算仍处于活动状态的延迟值的数量。注意，我们在这里使用的select表达式是Kotlin DSL，因此我们可以使用任意代码为它提供子句。在这种情况下，我们遍历一个延迟值列表，onAwait为每个延迟值提供子句。
 
-``` 
+```kotlin
 fun main(args: Array<String>) = runBlocking<Unit> {
     val list = asyncStringsList()
     val result = select<String> {
@@ -1818,7 +1824,7 @@ fun switchMapDeferreds(input: ReceiveChannel<Deferred<String>>) = produce<String
 为了测试它，我们将使用一个简单的异步函数，它在指定的时间后解析为指定的字符串：
 
 
-``` 
+```kotlin
 fun asyncString(str: String, time: Long) = async {
     delay(time)
     str
@@ -1827,7 +1833,7 @@ fun asyncString(str: String, time: Long) = async {
 
 main函数只是启动一个协程来打印结果switchMapDeferreds并向它发送一些测试数据：
 
-``` 
+```kotlin 
 
 fun main(args: Array<String>) = runBlocking<Unit> {
     val chan = Channel<Deferred<String>>() // the channel for test
