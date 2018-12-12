@@ -1,7 +1,6 @@
 package rxjava
 
 import io.reactivex.Observable
-import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
